@@ -1,0 +1,3 @@
+SELECT id
+FROM patients
+LIMIT 10;

@@ -1,13 +1,13 @@
 #!/bin/bash
 
 #update these if you want
-DB_NAME="your_database_name"
-DB_USER="your_username"
+DB_NAME="CS_554_Project_Med_db"
+DB_USER="damienlo"
 DB_HOST="localhost"
-DB_PORT="5432"
+DB_PORT="5433"
 
 
-psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c "SELECT 1;" > /dev/null 2>&1
+psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "SELECT 1;" > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     echo "postgre isnt working"
     exit 1
@@ -25,11 +25,11 @@ import_csv() {
         return 1
     fi
     
-    psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c "\COPY $table_name FROM '$csv_file' WITH (FORMAT csv, HEADER true, DELIMITER ',');"
+    psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "\COPY $table_name FROM '$csv_file' WITH (FORMAT csv, HEADER true, DELIMITER ',');"
     
     if [ $? -eq 0 ]; then
         # Count rows imported
-        row_count=$(psql -h $DB_HOST -U $DB_USER -d $DB_NAME -t -c "SELECT COUNT(*) FROM $table_name;")
+        row_count=$(psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -t -c "SELECT COUNT(*) FROM $table_name;")
     else
         echo "Failed to import $table_name${NC}"
         return 1
@@ -39,17 +39,17 @@ import_csv() {
 # Import tables in correct order (respecting dependencies)
 echo "importing"
 
-import_csv "patients" "data/patients.csv"
-import_csv "organizations" "data/organizations.csv"
-import_csv "payers" "data/payers.csv"
-import_csv "encounters" "data/encounters.csv"
-import_csv "conditions" "data/conditions.csv"
-import_csv "procedures" "data/procedures.csv"
-import_csv "medications" "data/medications.csv"
-import_csv "claims_transactions" "data/claims_transactions.csv"
+import_csv "patients" "/Users/damienlo/Desktop/University/CS 554/Final Project/CS554_Project_Medical_Database/data/patients.csv"
+import_csv "organizations" "/Users/damienlo/Desktop/University/CS 554/Final Project/CS554_Project_Medical_Database/data/organizations.csv"
+import_csv "payers" "/Users/damienlo/Desktop/University/CS 554/Final Project/CS554_Project_Medical_Database/data/payers.csv"
+import_csv "encounters" "/Users/damienlo/Desktop/University/CS 554/Final Project/CS554_Project_Medical_Database/data/encounters.csv"
+import_csv "conditions" "/Users/damienlo/Desktop/University/CS 554/Final Project/CS554_Project_Medical_Database/data/conditions.csv"
+import_csv "procedures" "/Users/damienlo/Desktop/University/CS 554/Final Project/CS554_Project_Medical_Database/data/procedures.csv"
+import_csv "medications" "/Users/damienlo/Desktop/University/CS 554/Final Project/CS554_Project_Medical_Database/data/medications.csv"
+import_csv "claims_transactions" "/Users/damienlo/Desktop/University/CS 554/Final Project/CS554_Project_Medical_Database/data/claims_transactions.csv"
 
 echo "summary:"
-psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c "
+psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "
 SELECT 
     schemaname,
     tablename,
