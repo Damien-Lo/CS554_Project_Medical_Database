@@ -1,9 +1,4 @@
 -- ============================================================================
-<<<<<<< Updated upstream
--- Medical Database Schema for CS554 Project
--- Updated with: providers table, primary keys, foreign keys, readmission indexes
--- ============================================================================
-=======
 -- CS554 Medical Database Schema
 -- ============================================================================
 -- 
@@ -25,7 +20,6 @@
 DROP VIEW IF EXISTS view_coverage_by_procedure CASCADE;
 DROP VIEW IF EXISTS view_coverage_by_payer CASCADE;
 DROP VIEW IF EXISTS view_claim_coverage_status CASCADE;
->>>>>>> Stashed changes
 
 -- Drop tables in reverse dependency order (children first, then parents)
 DROP TABLE IF EXISTS claims_transactions CASCADE;
@@ -38,12 +32,6 @@ DROP TABLE IF EXISTS payers CASCADE;
 DROP TABLE IF EXISTS organizations CASCADE;
 DROP TABLE IF EXISTS patients CASCADE;
 
-<<<<<<< Updated upstream
--- ============================================================================
--- BASE TABLES (No Foreign Key Dependencies)
--- ============================================================================
-
-=======
 
 -- ============================================================================
 -- PART 2: BASE TABLES
@@ -54,7 +42,6 @@ DROP TABLE IF EXISTS patients CASCADE;
 -- Table: patients
 -- Description: Core patient demographic information
 -- ----------------------------------------------------------------------------
->>>>>>> Stashed changes
 CREATE TABLE patients (
     Id UUID PRIMARY KEY,
     BIRTHDATE DATE,
@@ -85,6 +72,8 @@ CREATE TABLE patients (
     HEALTHCARE_COVERAGE DECIMAL(12,2),
     INCOME DECIMAL(12,2)
 );
+
+
 
 -- ----------------------------------------------------------------------------
 -- Table: organizations
@@ -133,11 +122,7 @@ CREATE TABLE payers (
     MEMBER_MONTHS INTEGER
 );
 
-<<<<<<< Updated upstream
--- ============================================================================
--- PROVIDERS TABLE (NEW - Critical Addition)
--- Links to organizations, referenced by encounters and claims
--- ============================================================================
+
 
 CREATE TABLE providers (
     Id UUID PRIMARY KEY,
@@ -159,12 +144,6 @@ CREATE INDEX idx_provider_org ON providers(ORGANIZATION);
 CREATE INDEX idx_provider_specialty ON providers(SPECIALITY);
 
 -- ============================================================================
--- ENCOUNTERS TABLE (Central table linking patients to care events)
--- ============================================================================
-
-=======
-
--- ============================================================================
 -- PART 3: CLINICAL TABLES
 -- ============================================================================
 -- These tables track patient care events
@@ -173,7 +152,6 @@ CREATE INDEX idx_provider_specialty ON providers(SPECIALITY);
 -- Table: encounters
 -- Description: Patient visits and care events
 -- ----------------------------------------------------------------------------
->>>>>>> Stashed changes
 CREATE TABLE encounters (
     Id UUID PRIMARY KEY,
     START TIMESTAMP NOT NULL,
@@ -198,24 +176,10 @@ CREATE INDEX idx_org_encounters ON encounters(ORGANIZATION, ENCOUNTERCLASS);
 CREATE INDEX idx_encounter_type ON encounters(ENCOUNTERCLASS);
 CREATE INDEX idx_encounter_payer ON encounters(PAYER);
 
-<<<<<<< Updated upstream
--- NEW: Critical index for readmission detection (discharge date)
-CREATE INDEX idx_patient_discharge ON encounters(PATIENT, STOP);
-
--- NEW: Composite index for inpatient/emergency readmission queries
-CREATE INDEX idx_readmission_analysis ON encounters(PATIENT, ENCOUNTERCLASS, START, STOP);
-
--- ============================================================================
--- CONDITIONS TABLE (Patient diagnoses - SNOMED CT codes)
--- Added: SERIAL PRIMARY KEY for unique identification
--- ============================================================================
-
-=======
 -- ----------------------------------------------------------------------------
 -- Table: conditions
 -- Description: Patient diagnoses and conditions (SNOMED CT codes)
 -- ----------------------------------------------------------------------------
->>>>>>> Stashed changes
 CREATE TABLE conditions (
     id SERIAL PRIMARY KEY,
     START DATE NOT NULL,
@@ -234,11 +198,6 @@ CREATE INDEX idx_condition_encounter ON conditions(ENCOUNTER);
 
 -- NEW: Index for chronic/active conditions (no end date)
 CREATE INDEX idx_active_conditions ON conditions(PATIENT, CODE) WHERE STOP IS NULL;
-
--- ============================================================================
--- PROCEDURES TABLE (Medical procedures performed)
--- Added: SERIAL PRIMARY KEY for unique identification
--- ============================================================================
 
 -- ----------------------------------------------------------------------------
 -- Table: procedures
@@ -262,18 +221,10 @@ CREATE INDEX idx_procedure_encounter ON procedures(ENCOUNTER);
 CREATE INDEX idx_procedure_code ON procedures(CODE);
 CREATE INDEX idx_procedure_patient ON procedures(PATIENT);
 
-<<<<<<< Updated upstream
--- ============================================================================
--- MEDICATIONS TABLE (Prescribed medications)
--- Added: SERIAL PRIMARY KEY for unique identification
--- ============================================================================
-
-=======
 -- ----------------------------------------------------------------------------
 -- Table: medications
 -- Description: Medications prescribed to patients
 -- ----------------------------------------------------------------------------
->>>>>>> Stashed changes
 CREATE TABLE medications (
     id SERIAL PRIMARY KEY,
     START TIMESTAMP NOT NULL,
@@ -294,11 +245,6 @@ CREATE TABLE medications (
 CREATE INDEX idx_patient_medications ON medications(PATIENT, START);
 CREATE INDEX idx_medication_encounter ON medications(ENCOUNTER);
 CREATE INDEX idx_medication_code ON medications(CODE);
-
--- ============================================================================
--- CLAIMS_TRANSACTIONS TABLE (Billing and insurance claims)
--- Added: Foreign key constraints for referential integrity
--- ============================================================================
 
 
 -- ============================================================================
@@ -355,12 +301,6 @@ CREATE INDEX idx_patient_procedure_claims ON claims_transactions(PATIENTID, PROC
 CREATE INDEX idx_denial_analysis ON claims_transactions(PROCEDURECODE, OUTSTANDING);
 CREATE INDEX idx_claims_encounter ON claims_transactions(APPOINTMENTID);
 CREATE INDEX idx_transaction_type ON claims_transactions(TYPE);
-<<<<<<< Updated upstream
-CREATE INDEX idx_claims_provider ON claims_transactions(PROVIDERID);
-
--- NEW: Index for outstanding claims (denial analysis)
-CREATE INDEX idx_claims_outstanding ON claims_transactions(OUTSTANDING) WHERE OUTSTANDING > 0;
-=======
 CREATE INDEX idx_claims_amount ON claims_transactions(AMOUNT, PAYMENTS);
 
 
@@ -519,4 +459,3 @@ GROUP BY py.Id, py.NAME, py.OWNERSHIP;
 -- ============================================================================
 -- END OF SCHEMA
 -- ============================================================================
->>>>>>> Stashed changes
