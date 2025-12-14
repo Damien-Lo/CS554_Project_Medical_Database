@@ -51,6 +51,7 @@ router.get('/high-risk', async (req, res) => {
       lace_scores AS (
         SELECT 
           *,
+          -- L: Length of stay (0-7 points)
           LEAST(7, GREATEST(0, 
             CASE 
               WHEN length_of_stay < 1 THEN 0
@@ -62,25 +63,48 @@ router.get('/high-risk', async (req, res) => {
             END
           )) as lace_length,
           
+          -- A: Acuity of admission (3 points if emergency)
           CASE WHEN admitted_via_ed = 1 THEN 3 ELSE 0 END as lace_acuity,
+          
+          -- C: Comorbidities (0-6 points, Charlson approximation)
           LEAST(6, condition_count) as lace_comorbidity,
+          
+          -- E: Emergency department visits in last 6 months (0-4 points)
           LEAST(4, ed_visits_6mo) as lace_ed_visits,
+          
+          -- Age calculation
           EXTRACT(YEAR FROM AGE(CURRENT_DATE, BIRTHDATE))::int as age
         FROM recent_discharges
       ),
       risk_calculation AS (
         SELECT 
           *,
+          -- LACE Score (0-19 points) - van Walraven et al., 2010
           (lace_length + lace_acuity + lace_comorbidity + lace_ed_visits) as lace_score,
-          (
-            LEAST(20, GREATEST(0, (age - 50) * 0.4)) +
-            (lace_length + lace_acuity + lace_comorbidity + lace_ed_visits) * 2 +
-            LEAST(30, prior_admissions_6mo * 10) +
-            LEAST(12, length_of_stay * 0.8)
-          )::numeric(5,2) as composite_risk_score
+          
+          -- Age-adjusted risk multiplier (Silverstein et al., 2008)
+          -- Based on odds ratios from published study
+          CASE 
+            WHEN age < 65 THEN 1.00
+            WHEN age BETWEEN 65 AND 69 THEN 1.00
+            WHEN age BETWEEN 70 AND 74 THEN 1.11
+            WHEN age BETWEEN 75 AND 79 THEN 1.30
+            WHEN age BETWEEN 80 AND 84 THEN 1.22
+            WHEN age >= 85 THEN 1.28
+          END as age_multiplier,
+          
+          -- Age risk points (0-6 points added to LACE)
+          CASE 
+            WHEN age < 65 THEN 0
+            WHEN age BETWEEN 65 AND 69 THEN 0
+            WHEN age BETWEEN 70 AND 74 THEN 2
+            WHEN age BETWEEN 75 AND 79 THEN 4
+            WHEN age BETWEEN 80 AND 84 THEN 3
+            WHEN age >= 85 THEN 5
+          END as age_points
         FROM lace_scores
       )
-      SELECT DISTINCT ON (patient_id)  -- ADD THIS LINE
+      SELECT DISTINCT ON (patient_id)
         patient_name,
         patient_id,
         age,
@@ -93,20 +117,27 @@ router.get('/high-risk', async (req, res) => {
         length_of_stay,
         ed_visits_6mo,
         lace_score,
-        composite_risk_score as risk_score,
+        age_points,
+        age_multiplier,
+        -- Combined LACE + Age Score (0-25 points)
+        (lace_score + age_points) as risk_score,
+        
+        -- Risk categories based on LACE + Age
         CASE 
-          WHEN composite_risk_score >= 80 THEN 'CRITICAL'
-          WHEN composite_risk_score >= 60 THEN 'HIGH'
-          WHEN composite_risk_score >= 40 THEN 'MEDIUM'
+          WHEN (lace_score + age_points) >= 15 THEN 'CRITICAL'
+          WHEN (lace_score + age_points) >= 10 THEN 'HIGH'
+          WHEN (lace_score + age_points) >= 5 THEN 'MEDIUM'
           ELSE 'LOW'
         END as risk_category,
+        
+        -- Evidence-based readmission risk estimates
         CASE 
           WHEN lace_score >= 10 THEN 'High (15-25% risk)'
           WHEN lace_score >= 5 THEN 'Moderate (8-15% risk)'
           ELSE 'Low (3-8% risk)'
         END as estimated_readmission_risk
       FROM risk_calculation
-      ORDER BY patient_id, composite_risk_score DESC  -- MODIFY THIS LINE
+      ORDER BY patient_id, (lace_score + age_points) DESC
       LIMIT $1;
     `;
 
