@@ -949,11 +949,11 @@ function App() {
                             {/* Summary Cards */}
                             <div className="summary-cards" style={{ marginBottom: '2rem' }}>
                                 <div className="summary-card">
-                                    <div className="summary-value">{results.total_readmission_events || 0}</div>
+                                    <div className="summary-value">{Number(results.total_readmissions) || 0}</div>
                                     <div className="summary-label">Readmission Events</div>
                                 </div>
                                 <div className="summary-card bad-card">
-                                    <div className="summary-value">{results.total_readmissions || 0}</div>
+                                    <div className="summary-value">{Number(results.total_readmissions) || 0}</div>
                                     <div className="summary-label">Total Readmissions</div>
                                 </div>
                                 <div className="summary-card">

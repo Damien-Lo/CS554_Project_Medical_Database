@@ -27,23 +27,19 @@ router.get('/high-risk', async (req, res) => {
           (SELECT COUNT(*) 
            FROM conditions c 
            WHERE c.ENCOUNTER = e.Id) as condition_count,
-          -- Length of stay in days
           EXTRACT(DAY FROM (e.STOP - e.START))::int as length_of_stay,
-          -- Prior admissions in last 6 months (LACE uses 6 months)
           (SELECT COUNT(*)
            FROM encounters e2
            WHERE e2.PATIENT = e.PATIENT
              AND e2.ENCOUNTERCLASS IN ('inpatient', 'emergency')
              AND e2.STOP < e.START
              AND e2.STOP >= e.START - INTERVAL '6 months') as prior_admissions_6mo,
-          -- Emergency department visit in last 6 months
           (SELECT COUNT(*)
            FROM encounters e2
            WHERE e2.PATIENT = e.PATIENT
              AND e2.ENCOUNTERCLASS = 'emergency'
              AND e2.STOP >= e.START - INTERVAL '6 months'
              AND e2.STOP < e.START) as ed_visits_6mo,
-          -- Check if admitted via ED
           CASE WHEN e.ENCOUNTERCLASS = 'emergency' THEN 1 ELSE 0 END as admitted_via_ed
         FROM encounters e
         JOIN patients p ON e.PATIENT = p.Id
@@ -55,8 +51,6 @@ router.get('/high-risk', async (req, res) => {
       lace_scores AS (
         SELECT 
           *,
-          -- LACE Index Components (van Walraven et al., 2010)
-          -- L: Length of stay (0-7 points, capped at 14+ days = 7 points)
           LEAST(7, GREATEST(0, 
             CASE 
               WHEN length_of_stay < 1 THEN 0
@@ -68,51 +62,25 @@ router.get('/high-risk', async (req, res) => {
             END
           )) as lace_length,
           
-          -- A: Acuity of admission (3 points if emergency admission)
           CASE WHEN admitted_via_ed = 1 THEN 3 ELSE 0 END as lace_acuity,
-          
-          -- C: Comorbidities (Charlson index approximation, 0-6 points)
           LEAST(6, condition_count) as lace_comorbidity,
-          
-          -- E: Emergency department visits (0-4 points)
           LEAST(4, ed_visits_6mo) as lace_ed_visits,
-          
-          -- Additional HOSPITAL Score components (Donzé et al., 2013)
-          -- Hemoglobin at discharge (<12 g/dL) - we'll approximate with condition severity
-          -- Oncology service discharge - check for cancer-related conditions
-          -- Sodium level (<135 mEq/L) - we'll approximate
-          -- Procedure during stay - check procedures table
-          -- Index admission type (emergency)
-          -- Total admissions in past year
-          -- Length of stay
-          
-          -- Age component (varies by model)
           EXTRACT(YEAR FROM AGE(CURRENT_DATE, BIRTHDATE))::int as age
         FROM recent_discharges
       ),
       risk_calculation AS (
         SELECT 
           *,
-          -- Calculate LACE Score (0-19 points)
           (lace_length + lace_acuity + lace_comorbidity + lace_ed_visits) as lace_score,
-          
-          -- Enhanced risk score incorporating multiple validated factors
           (
-            -- Age factor (0-20 points) - elderly patients at higher risk
             LEAST(20, GREATEST(0, (age - 50) * 0.4)) +
-            
-            -- LACE score contribution (0-38 points, scaled from 0-19)
             (lace_length + lace_acuity + lace_comorbidity + lace_ed_visits) * 2 +
-            
-            -- Recent admissions (0-30 points) - strong predictor
             LEAST(30, prior_admissions_6mo * 10) +
-            
-            -- Length of stay factor (0-12 points) - longer stays = higher risk
             LEAST(12, length_of_stay * 0.8)
           )::numeric(5,2) as composite_risk_score
         FROM lace_scores
       )
-      SELECT 
+      SELECT DISTINCT ON (patient_id)  -- ADD THIS LINE
         patient_name,
         patient_id,
         age,
@@ -132,14 +100,13 @@ router.get('/high-risk', async (req, res) => {
           WHEN composite_risk_score >= 40 THEN 'MEDIUM'
           ELSE 'LOW'
         END as risk_category,
-        -- Risk percentage estimate (LACE ?10 has ~20% readmission risk)
         CASE 
           WHEN lace_score >= 10 THEN 'High (15-25% risk)'
           WHEN lace_score >= 5 THEN 'Moderate (8-15% risk)'
           ELSE 'Low (3-8% risk)'
         END as estimated_readmission_risk
       FROM risk_calculation
-      ORDER BY composite_risk_score DESC
+      ORDER BY patient_id, composite_risk_score DESC  -- MODIFY THIS LINE
       LIMIT $1;
     `;
 
