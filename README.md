@@ -39,9 +39,9 @@ psql -U postgres -d medical_db -f database/backup.sql
 
 Or use pgAdmin:
 1. Open pgAdmin
-2. Right-click on "Databases" ? Create ? Database
+2. Right-click on "Databases" -> Create -> Database
 3. Name it `medical_db`
-4. Right-click on the database ? Query Tool
+4. Right-click on the database -> Query Tool
 5. Open the `backup.sql` file (folder icon)
 6. Execute the script (lightning bolt icon or F5)
 
@@ -98,26 +98,26 @@ The application will open in your browser at `http://localhost:5173`
 ## Project Structure
 ```
 CS554_Project_Medical_Database/
-??? client/                 # React frontend
-?   ??? src/
-?   ?   ??? App.jsx        # Main application component
-?   ?   ??? App.css        # Styles
-?   ?   ??? main.jsx       # Entry point
-?   ??? package.json
-?   ??? vite.config.js
-?
-??? server/                 # Express backend
-?   ??? routes/            # API routes
-?   ?   ??? patients.js    # Patient-related endpoints
-?   ?   ??? coverage.js    # Insurance coverage endpoints
-?   ?   ??? readmissions.js # Readmission detection
-?   ??? index.js           # Server entry point
-?   ??? db.js              # Database connection
-?   ??? package.json
-?   ??? .env               # Environment variables (create this)
-?
-??? database/
-    ??? backup.sql         # Database schema and data
+|-- client/                 # React frontend
+|   |-- src/
+|   |   |-- App.jsx        # Main application component
+|   |   |-- App.css        # Styles
+|   |   `-- main.jsx       # Entry point
+|   |-- package.json
+|   `-- vite.config.js
+|
+|-- server/                 # Express backend
+|   |-- routes/            # API routes
+|   |   |-- patients.js    # Patient-related endpoints
+|   |   |-- coverage.js    # Insurance coverage endpoints
+|   |   `-- readmissions.js # Readmission detection
+|   |-- index.js           # Server entry point
+|   |-- db.js              # Database connection
+|   |-- package.json
+|   `-- .env               # Environment variables (create this)
+|
+`-- database/
+    `-- backup.sql         # Database schema and data
 ```
 
 
