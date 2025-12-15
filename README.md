@@ -34,7 +34,7 @@ CREATE DATABASE medical_db;
 #### Load the Schema and Data
 ```bash
 # Import the database dump
-psql -U postgres -d medical_db -f database/backup.sql
+psql -U postgres -d medical_db -f backup.sql
 ```
 
 Or use pgAdmin:
@@ -57,7 +57,7 @@ Add the following to `server/.env`:
 ```env
 DB_USER=postgres
 DB_HOST=localhost
-DB_DATABASE=medical_db
+DB_NAME=medical_db
 DB_PASSWORD=your_postgres_password
 DB_PORT=5432
 PORT=3001
